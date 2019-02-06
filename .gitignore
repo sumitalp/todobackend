@@ -1,0 +1,4 @@
+#Ignore the virtual environment
+cd-docker-ansible-env
+*.pyc
+*.sqlite3
