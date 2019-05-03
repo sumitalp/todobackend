@@ -2,3 +2,5 @@
 cd-docker-ansible-env
 *.pyc
 *.sqlite3
+.coverage
+.vscode
