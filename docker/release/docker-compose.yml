@@ -19,7 +19,7 @@ app:
     - "--die-on-term"
 
 test:
-  image: ahsan/todobackend-specs
+  image: ahsankhan/todobackend-specs
   links:
     - nginx
   environment:
@@ -40,7 +40,7 @@ nginx:
     - webroot
 
 agent:
-  image: ahsan/ansible
+  image: ahsankhan/ansible
   volumes:
     - ../../ansible/probe.yml:/ansible/site.yml
   links:

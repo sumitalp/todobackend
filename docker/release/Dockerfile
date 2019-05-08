@@ -1,4 +1,4 @@
-FROM ahsan/todobackend-base:latest
+FROM ahsankhan/todobackend-base:latest
 LABEL maintainer="Ahsanuzzaman Khan<ahsan.khan434@gmail.com>"
 
 # Copy application artifacts
