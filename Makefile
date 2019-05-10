@@ -1,6 +1,6 @@
 # Project Variables
 PROJECT_NAME ?= todobackend # Retreive from env variable otherwise todobackend
-ORG_NAME ?= ahsan
+ORG_NAME ?= ahsankhan
 REPO_NAME ?= todobackend
 
 # File names
@@ -33,3 +33,4 @@ clean:
 	docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) rm -f
 	docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) kill
 	docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) rm -f 
+	docker images -q -f dangling=true -f label=application=$(REPO_NAME ) | xargs -I ARGS docker rmi -f ARGS
