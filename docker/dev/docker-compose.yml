@@ -24,13 +24,12 @@ builder:
 
 agent:
   image: ahsankhan/ansible
-  volumes:
-    - ../../ansible/probe.yml:/ansible/site.yml
   links:
     - db
   environment:
     PROBE_HOST: "db"
     PROBE_PORT: "3307"
+  command: ["probe.yml"]
 
 db:
   image: mysql:5.6

@@ -4,3 +4,5 @@ cd-docker-ansible-env
 *.sqlite3
 .coverage
 .vscode
+reports
+target
