@@ -26,7 +26,8 @@ test:
     URL: http://nginx:9000/todos
     JUNIT_REPORTER_PATH: /reports/acceptance.xml
     JUNIT_REPORTER_STACK: 1
-  command: --reporter "mocha-jenkins-reporter"
+    TEST_OUTPUT_DIR: /reports
+  command: --reporter mocha-jenkins-reporter
 
 nginx:
   build: .
