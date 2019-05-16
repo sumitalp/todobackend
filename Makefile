@@ -49,7 +49,8 @@ build:
 
 release:
 	${INFO} "Pulling latest images for consistency..."
-	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) pull test # Pull todobackend-specs image because we already has pulled todobackend-base image in `test` section
+	# Pull todobackend-specs image because we already has pulled todobackend-base image in `test` section
+	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) pull test 
 	${INFO} "Building images..."
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) build app
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) build webroot
