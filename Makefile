@@ -19,7 +19,7 @@ CHECK := @bash -c '\
 	then exit $(INSPECT); fi' VALUE
 
 # Use these settings to specify a custom Docker registry
-DOCKER_REGISTRY := docker.io
+DOCKER_REGISTRY ?= docker.io
 
 .PHONY: test build release clean tag
 
@@ -94,11 +94,17 @@ INFO := @bash -c '\
 	echo "=> $$1"; \
 	printf $(NC)' VALUE
 
+IMAGE_ID := $$(docker-compose inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+
 # Extract tag arguments
 ifeq (tag,$(firstword $(MAKECMDGOALS)))
+	# wordlist function iterate from position 2 to length of arguments
+	# words function counts the arguments length
 	TAG_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
 	ifeq ($(TAG_ARGS),)
 		$(error You must specify a tag)
 	endif
+	# below line with eval if the command is, `make tag 0.1 latest`
+	# then it'll not interpret 0.1 latest as make target files
 	$(eval $(TAG_ARGS):;@:)
 endif
