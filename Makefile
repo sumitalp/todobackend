@@ -11,6 +11,9 @@ REL_COMPOSE_FILE := docker/release/docker-compose.yml
 REL_PROJECT := $(PROJECT_NAME)$(BUILD_ID)
 DEV_PROJECT := $(REL_PROJECT:%=%dev) # Concat 'dev' string with REL_PROJECT
 
+# Application service name - must match Docker Compose release specification application service name
+APP_SERVICE_NAME := app
+
 # Check and Inspect logic
 INSPECT := $$(docker-compose -p $$1 -f $$2 ps -q $$3 | xargs -I ARGS docker inspect -f "{{ .State.ExitCode }}" ARGS)
 
@@ -21,7 +24,7 @@ CHECK := @bash -c '\
 # Use these settings to specify a custom Docker registry
 DOCKER_REGISTRY ?= docker.io
 
-.PHONY: test build release clean tag
+.PHONY: test build release clean tag buildtag
 
 test:
 	${INFO} "Pulling latest images for consistency..."
@@ -84,6 +87,9 @@ tag:
 	@ $(foreach tag,$(TAG_ARGS), docker tag $(IMAGE_ID) $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME):$(tag);)
 	${INFO} "Tagging complete"
 
+%:
+	@:
+
 # Cosmetics
 YELLOW := "\e[1;33m"
 NC := "\e[0m"
@@ -94,6 +100,10 @@ INFO := @bash -c '\
 	echo "=> $$1"; \
 	printf $(NC)' VALUE
 
+# Get container id of application service container
+APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) ps -q $(APP_SERVICE_NAME))
+
+# Getting image id of application service
 IMAGE_ID := $$(docker-compose inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
 
 # Extract tag arguments
@@ -107,4 +117,17 @@ ifeq (tag,$(firstword $(MAKECMDGOALS)))
 	# below line with eval if the command is, `make tag 0.1 latest`
 	# then it'll not interpret 0.1 latest as make target files
 	$(eval $(TAG_ARGS):;@:)
+endif
+
+# Extract build tag arguments
+ifeq (buildtag,$(firstword $(MAKECMDGOALS)))
+	# wordlist function iterate from position 2 to length of arguments
+	# words function counts the arguments length
+	BUILDTAG_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+	ifeq ($(BUILDTAG_ARGS),)
+		$(error You must specify a tag)
+	endif
+	# below line with eval if the command is, `make buildtag 0.1 latest`
+	# then it'll not interpret 0.1 latest as make target files
+	$(eval $(BUILDTAG_ARGS):;@:)
 endif
