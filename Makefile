@@ -24,6 +24,38 @@ CHECK := @bash -c '\
 # Use these settings to specify a custom Docker registry
 DOCKER_REGISTRY ?= docker.io
 
+# Get container id of application service container
+APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) ps -q $(APP_SERVICE_NAME))
+
+# Getting image id of application service
+IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+
+# Extract tag arguments
+ifeq (tag,$(firstword $(MAKECMDGOALS))) # Inside we must put spaces rather than tab
+	# wordlist function iterate from position 2 to length of arguments
+	# words function counts the arguments length
+    TAG_ARGS := $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+    ifeq ($(TAG_ARGS),)
+        $(error You must specify a tag)
+    endif
+	# below line with eval if the command is, `make tag 0.1 latest`
+	# then it'll not interpret 0.1 latest as make target files
+    $(eval $(TAG_ARGS):;@:)
+endif
+
+# Extract build tag arguments
+ifeq (buildtag,$(firstword $(MAKECMDGOALS)))
+	# wordlist function iterate from position 2 to length of arguments
+	# words function counts the arguments length
+    BUILDTAG_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
+    ifeq ($(BUILDTAG_ARGS),)
+        $(error You must specify a tag)
+    endif
+	# below line with eval if the command is, `make buildtag 0.1 latest`
+	# then it'll not interpret 0.1 latest as make target files
+    $(eval $(BUILDTAG_ARGS):;@:)
+endif
+
 .PHONY: test build release clean tag buildtag
 
 test:
@@ -99,35 +131,3 @@ INFO := @bash -c '\
 	printf $(YELLOW); \
 	echo "=> $$1"; \
 	printf $(NC)' VALUE
-
-# Get container id of application service container
-APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) ps -q $(APP_SERVICE_NAME))
-
-# Getting image id of application service
-IMAGE_ID := $$(docker-compose inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
-
-# Extract tag arguments
-ifeq (tag,$(firstword $(MAKECMDGOALS)))
-	# wordlist function iterate from position 2 to length of arguments
-	# words function counts the arguments length
-	TAG_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
-	ifeq ($(TAG_ARGS),)
-		$(error You must specify a tag)
-	endif
-	# below line with eval if the command is, `make tag 0.1 latest`
-	# then it'll not interpret 0.1 latest as make target files
-	$(eval $(TAG_ARGS):;@:)
-endif
-
-# Extract build tag arguments
-ifeq (buildtag,$(firstword $(MAKECMDGOALS)))
-	# wordlist function iterate from position 2 to length of arguments
-	# words function counts the arguments length
-	BUILDTAG_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
-	ifeq ($(BUILDTAG_ARGS),)
-		$(error You must specify a tag)
-	endif
-	# below line with eval if the command is, `make buildtag 0.1 latest`
-	# then it'll not interpret 0.1 latest as make target files
-	$(eval $(BUILDTAG_ARGS):;@:)
-endif
