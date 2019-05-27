@@ -4,8 +4,8 @@ ORG_NAME ?= ahsankhan
 REPO_NAME ?= todobackend
 
 # File names
-DEV_COMPOSE_FILE := docker/dev/docker-compose.yml
-REL_COMPOSE_FILE := docker/release/docker-compose.yml
+DEV_COMPOSE_FILE := docker/dev/docker-compose-v2.yml
+REL_COMPOSE_FILE := docker/release/docker-compose-v2.yml
 
 # Docker Compose Project Names
 REL_PROJECT := $(PROJECT_NAME)$(BUILD_ID)
@@ -29,6 +29,19 @@ APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) p
 
 # Getting image id of application service
 IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+
+# Build tag expression - can be used to evaluate a shell expression at runtime
+BUILD_TAG_EXPRESSION ?= date -u +%Y%m%d%H%M%S
+
+# Execute shell expression
+BUILD_EXPRESSION := $(shell $(BUILD_TAG_EXPRESSION))
+
+# Build tag - defaults to BUILD_EXPRESSION if not defined
+BUILD_TAG ?= $(BUILD_EXPRESSION)
+
+# WARNING: Set DOCKER_REGISTRY_AUTH to empty for Docker Hub
+# Set DOCKER_REGISTRY_AUTH to auth endpoint for private Docker registry
+DOCKER_REGISTRY_AUTH ?=
 
 # Extract tag arguments
 ifeq (tag,$(firstword $(MAKECMDGOALS))) # Inside we must put spaces rather than tab
@@ -56,14 +69,15 @@ ifeq (buildtag,$(firstword $(MAKECMDGOALS)))
     $(eval $(BUILDTAG_ARGS):;@:)
 endif
 
-.PHONY: test build release clean tag buildtag
+.PHONY: test build release clean tag buildtag login logout publish
 
 test:
+	${INFO} "Creating external cache volume..."
+	@ docker volume create --name cache
 	${INFO} "Pulling latest images for consistency..."
 	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) pull
 	${INFO} "Building images..."
 	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) build --pull test
-	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) build cache
 	${INFO} "Ensuring database is ready..."
 	# Here we use run --rm rather than up because we don't have any dependencies of that container
 	# Such as, we don't need to copy anything. run --rm checks if there is any error occurs or not and then 
@@ -91,7 +105,6 @@ release:
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) pull test 
 	${INFO} "Building images..."
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) build app
-	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) build webroot
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) build --pull nginx
 	${INFO} "Ensuring database is ready..."
 	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) run --rm agent
@@ -107,11 +120,11 @@ release:
 
 clean:
 	${INFO} "Destroying development environment..." 
-	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) kill # @ symbol is used to suppress which command is executed
-	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) rm -f -v
-	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) kill
-	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) rm -f -v
-	@ docker images -q -f dangling=true -f label=application=$(REPO_NAME ) | xargs -I ARGS docker rmi -f ARGS
+	@ docker-compose -p $(DEV_PROJECT) -f $(DEV_COMPOSE_FILE) down -v # @ symbol is used to suppress which command is executed
+	${INFO} "Destroying release environment..."
+	@ docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) down -v
+	${INFO} "Removing dangling images..."
+	@ docker images -q -f dangling=true -f label=application=$(REPO_NAME) | xargs -I ARGS docker rmi -f ARGS
 	${INFO} "Clean complete"
 
 tag:
@@ -119,8 +132,38 @@ tag:
 	@ $(foreach tag,$(TAG_ARGS), docker tag $(IMAGE_ID) $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME):$(tag);)
 	${INFO} "Tagging complete"
 
+buildtag:
+	${INFO} "Tagging release image with suffix $(BUILD_TAG) and build tags $(BUILDTAG_ARGS)..."
+	@ $(foreach tag,$(BUILDTAG_ARGS), docker tag $(IMAGE_ID) $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME):$(tag).$(BUILD_TAG);)
+	${INFO} "Tagging complete"
+
+login:
+	${INFO} "Logging in to Docker registry $$DOCKER_REGISTRY..."
+	@ docker login -u $$DOCKER_USER -p $$DOCKER_PASSWORD $(DOCKER_REGISTRY_AUTH)
+	${INFO} "Logged in to Docker registry $$DOCKER_REGISTRY"
+
+logout:
+	${INFO} "Logging out to Docker registry $$DOCKER_REGISTRY..."
+	@ docker logout
+	${INFO} "Logged out to Docker registry $$DOCKER_REGISTRY"
+
+publish:
+	${INFO} "Publishing release image $(IMAGE_ID) to $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)..."
+	@ $(foreach tag,$(shell echo $(REPO_EXPR)), docker push $(tag);)
+	${INFO} "Publish complete"
+
 %:
 	@:
+
+# Introspect repository tag
+REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
+
+# Repository Filter
+ifeq ($(DOCKER_REGISTRY), docker.io)
+    REPO_FILTER := $(ORG_NAME)/$(REPO_NAME)[^[:space:]|\$$]*
+else
+    REPO_FILTER := $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)[^[:space:]|\$$]*
+endif
 
 # Cosmetics
 YELLOW := "\e[1;33m"
