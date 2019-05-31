@@ -1,0 +1,51 @@
+version: '2'
+
+volumes:
+  build:
+    driver: local # Shortcut build: {}
+  cache:
+    external: true
+
+services:
+  test:
+    build: 
+      context: ../../
+      dockerfile: docker/dev/Dockerfile
+    volumes:
+      - cache:/cache
+      - build:/build
+    links:
+      - db
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings.test
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
+      TEST_OUTPUT_DIR: /reports
+
+  builder:
+    build:
+      context: ../../
+      dockerfile: docker/dev/Dockerfile
+    volumes:
+      - build:/build
+    entrypoint: "entrypoint.sh"
+    command: ["pip", "wheel", "--no-index", "-f /build", "."]
+
+  agent:
+    image: ahsankhan/ansible
+    links:
+      - db
+    environment:
+      PROBE_HOST: "db"
+      PROBE_PORT: "3307"
+    command: ["probe.yml"]
+
+  db:
+    image: mysql:5.6
+    hostname: db
+    container_name: db
+    expose:
+      - "3307"
+    environment:
+      MYSQL_ROOT_PASSWORD: password

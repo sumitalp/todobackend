@@ -1,0 +1,68 @@
+version: '2'
+
+volumes:
+  webroot:
+    driver: local
+
+services:
+  app:
+    build:
+      context: ../../
+      dockerfile: docker/release/Dockerfile
+    volumes:
+      - webroot:/var/www/todobackend
+    links:
+      - db
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings.release
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
+    command:
+      - uwsgi
+      - "--socket /var/www/todobackend/todobackend.sock"
+      - "--chmod-socket=666"
+      - "--module todobackend.wsgi"
+      - "--master"
+      - "--die-on-term"
+
+  test:
+    image: ahsankhan/todobackend-specs
+    links:
+      - nginx
+    environment:
+      URL: http://nginx:9000/todos
+      JUNIT_REPORTER_PATH: /reports/acceptance.xml
+      JUNIT_REPORTER_STACK: 1
+      TEST_OUTPUT_DIR: /reports
+    command: --reporter mocha-jenkins-reporter
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    links:
+      - app
+    ports:
+      - "9000:9000"
+    volumes:
+      - webroot:/var/www/todobackend
+
+  agent:
+    image: ahsankhan/ansible
+    links:
+      - db
+    environment:
+      PROBE_HOST: "db"
+      PROBE_PORT: "3307"
+    command: ["probe.yml"]
+
+  db:
+    image: mysql:5.6
+    expose:
+      - "3307"
+    environment:
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: todobackend
+      MYSQL_USER: todo
