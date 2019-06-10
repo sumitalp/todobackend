@@ -32,8 +32,8 @@ services:
       - nginx
     environment:
       URL: http://nginx:9000/todos
-      JUNIT_REPORTER_PATH: /reports/acceptance.xml
-      JUNIT_REPORTER_STACK: 1
+      JUNIT_REPORT_PATH: /reports/acceptance.xml
+      JUNIT_REPORT_STACK: 1
       TEST_OUTPUT_DIR: /reports
     command: --reporter mocha-jenkins-reporter
 
