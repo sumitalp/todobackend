@@ -149,7 +149,7 @@ logout:
 
 publish:
 	${INFO} "Publishing release image $(IMAGE_ID) to $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)..."
-	$(foreach tag,$(shell echo $(REPO_EXPR)), docker push $(tag);)
+	$(foreach tag,$(shell echo $(eval $(REPO_EXPR))), docker push $(tag);)
 	${INFO} "Publish complete"
 
 %:
