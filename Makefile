@@ -156,7 +156,7 @@ publish:
 	@:
 
 # Introspect repository tag
-REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
+REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(eval $(IMAGE_ID)) | grep -oh "$(REPO_FILTER)" | xargs)
 
 # Repository Filter
 ifeq ($(DOCKER_REGISTRY), docker.io)
