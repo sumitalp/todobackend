@@ -150,7 +150,7 @@ logout:
 publish:
 	${INFO} "Publishing release image $(IMAGE_ID) to $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)..."
 	$(shell echo $(IMAGE_ID))
-	$(shell echo $(REPOTAGS))
+	$(shell echo $(REPO_EXPR))
 	# $(foreach tag, $(REPOTAGS), docker push $(tag);)
 	${INFO} "Publish complete"
 
@@ -158,7 +158,7 @@ publish:
 	@:
 
 # Introspect repository tag
-REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
+REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(shell echo $(IMAGE_ID)) | grep -oh "$(REPO_FILTER)" | xargs)
 REPOTAGS := $(call $(REPO_EXPR))
 # Repository Filter
 ifeq ($(DOCKER_REGISTRY), docker.io)
