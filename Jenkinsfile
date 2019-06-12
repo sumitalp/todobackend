@@ -25,7 +25,7 @@ node {
         sleep(10)
         
     } finally {
-        stage('Collect test reports'){
+        // stage('Collect test reports'){
         //     step([$class: 'JUnitResultArchiver', testResults: '**/reports/*.xml'])
         // }
         
