@@ -22,6 +22,7 @@ node {
             
             sh script: 'sudo make publish'
         }
+        sleep(10)
         
     } finally {
         stage('Collect test reports'){
