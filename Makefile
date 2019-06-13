@@ -28,7 +28,8 @@ DOCKER_REGISTRY ?= docker.io
 APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) ps -q $(APP_SERVICE_NAME))
 
 # Getting image id of application service
-IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+# IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+IMAGE_ID := $$(docker images | grep -E '^todobackend[^[:space:]]*' | awk '{print $3}' | head -n 1)
 
 # Build tag expression - can be used to evaluate a shell expression at runtime
 BUILD_TAG_EXPRESSION ?= date -u +%Y%m%d%H%M%S
@@ -149,17 +150,15 @@ logout:
 
 publish:
 	${INFO} "Publishing release image $(IMAGE_ID) to $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)..."
-	$(shell echo $(IMAGE_ID))
-	$(shell echo $(REPO_EXPR))
-	# $(foreach tag, $(REPOTAGS), docker push $(tag);)
+	$(foreach tag, $(shell echo $(REPO_EXPR)), docker push $(tag);)
 	${INFO} "Publish complete"
 
 %:
 	@:
 
 # Introspect repository tag
-REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(shell echo $(IMAGE_ID)) | grep -oh "$(REPO_FILTER)" | xargs)
-REPOTAGS := $(call $(REPO_EXPR))
+REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
+# REPOTAGS := $(call $(REPO_EXPR))
 # Repository Filter
 ifeq ($(DOCKER_REGISTRY), docker.io)
     REPO_FILTER := $(ORG_NAME)/$(REPO_NAME)[^[:space:]]*
