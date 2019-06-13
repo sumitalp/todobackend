@@ -28,8 +28,8 @@ DOCKER_REGISTRY ?= docker.io
 APP_CONTAINER_ID := $$(docker-compose -p $(REL_PROJECT) -f $(REL_COMPOSE_FILE) ps -q $(APP_SERVICE_NAME))
 
 # Getting image id of application service
-# IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
-IMAGE_ID := $$(docker images | grep -E '^todobackend[^[:space:]]*' | awk '{print $3}' | head -n 1)
+IMAGE_ID := $$(docker inspect -f '{{ .Image }}' $(APP_CONTAINER_ID))
+# IMAGE_ID := $$(docker images | grep -E '^todobackend[^[:space:]]*' | awk '{print $3}' | head -n 1)
 
 # Build tag expression - can be used to evaluate a shell expression at runtime
 BUILD_TAG_EXPRESSION ?= date -u +%Y%m%d%H%M%S
