@@ -22,16 +22,16 @@ node {
             
             sh script: 'sudo make publish'
         }
-        // sleep(20)
+        sleep(20)
         
     } finally {
-        // stage('Collect test reports'){
-        //     step([$class: 'JUnitResultArchiver', testResults: '**/reports/*.xml'])
-        // }
+        stage('Collect test reports'){
+            step([$class: 'JUnitResultArchiver', testResults: '**/reports/*.xml'])
+        }
         
-        // stage('Clean up'){
-        //     sh script: 'sudo make clean'
-        //     sh script: 'sudo make logout'
-        // }
+        stage('Clean up'){
+            sh script: 'sudo make clean'
+            sh script: 'sudo make logout'
+        }
     }
 }
