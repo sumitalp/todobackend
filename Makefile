@@ -70,6 +70,17 @@ ifeq (buildtag,$(firstword $(MAKECMDGOALS)))
     $(eval $(BUILDTAG_ARGS):;@:)
 endif
 
+# Repository Filter
+ifeq ($(DOCKER_REGISTRY), docker.io)
+    REPO_FILTER := $(ORG_NAME)/$(REPO_NAME)[^[:space:]]*
+else
+    REPO_FILTER := $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)[^[:space:]]*
+endif
+
+# Introspect repository tag
+REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
+
+
 .PHONY: test build release clean tag buildtag login logout publish
 
 test:
@@ -157,15 +168,6 @@ publish:
 %:
 	@:
 
-# Introspect repository tag
-REPO_EXPR := $$(docker inspect -f '{{range .RepoTags}}{{.}} {{end}}' $(IMAGE_ID) | grep -oh "$(REPO_FILTER)" | xargs)
-# REPOTAGS := $(call $(REPO_EXPR))
-# Repository Filter
-ifeq ($(DOCKER_REGISTRY), docker.io)
-    REPO_FILTER := $(ORG_NAME)/$(REPO_NAME)[^[:space:]]*
-else
-    REPO_FILTER := $(DOCKER_REGISTRY)/$(ORG_NAME)/$(REPO_NAME)[^[:space:]]*
-endif
 
 # Cosmetics
 YELLOW := "\e[1;33m"
